@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: redis_server
+    restart: always
+    ports:
+      - "6379:6379"
+    # Kích hoạt AOF (lưu dữ liệu bền vững) và đặt mật khẩu
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "YourSecurePassword123"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - redis_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "YourSecurePassword123", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Giao diện Web UI để quản lý trực quan các key trong Redis (tùy chọn)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: redis_commander
+    restart: always
+    environment:
+      - REDIS_HOSTS=local:redis:6379:0:YourSecurePassword123
+    ports:
+      - "8686:8081"
+    depends_on:
+      - redis
+    networks:
+      - redis_net
+
+volumes:
+  redis_data:
+    driver: local
+
+networks:
+  redis_net:
+    driver: bridge
